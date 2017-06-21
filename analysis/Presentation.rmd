@@ -1,0 +1,73 @@
+---
+title: "Gross Square Ft. vs. Sale Price"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Live Session 6 Assignment
+```{r}
+###plyr library loaded
+library(plyr)
+### manhattan data read
+manhattan <- read.csv("../data/rollingsales_manhattan.csv",skip=4,header=TRUE)
+## Check the data
+head(manhattan)
+summary(manhattan)
+str(manhattan)
+
+## clean/format the data with regular expressions
+manhattan$SALE.PRICE.N <- as.numeric(gsub("[^[:digit:]]","", manhattan$SALE.PRICE))
+##count NA values for sale prices in manhattan
+count(is.na(manhattan$SALE.PRICE.N))
+##lowercase names in manhattan
+names(manhattan) <- tolower(names(manhattan)) 
+## Get rid of leading digits
+manhattan$gross.sqft <- as.numeric(gsub("[^[:digit:]]","", manhattan$gross.square.feet))
+manhattan$land.sqft <- as.numeric(gsub("[^[:digit:]]","", manhattan$land.square.feet))
+manhattan$year.built <- as.numeric(as.character(manhattan$year.built))
+
+## do a bit of exploration to make sure there's not anything
+## weird going on with sale prices
+attach(manhattan)
+hist(sale.price.n) 
+detach(manhattan)
+```
+###As you can see above, the histogram covers the area far left of $100 million sale price marker. To the right of the first histogram bar, there is a tiny bar which covers the $100-200 millon sale price area.
+```{r}
+
+## keep only the actual sales where price is not equal to 0
+manhattan.sale <- manhattan[manhattan$sale.price.n!=0,]
+
+## Plot gross square ft vs. sale price for manhattan
+plot(manhattan.sale$gross.sqft,manhattan.sale$sale.price.n)
+
+```
+##Gross Sq. ft. vs. sale price (log base 10 transformed)
+```{r}
+## Plot gross square ft vs. sale price for manhattan with log 10 transform
+plot(log10(manhattan.sale$gross.sqft),log10(manhattan.sale$sale.price.n))
+```
+##Gross Sq. ft. vs. sale price (log base 10 transformed) for only 1,2,3 family homes
+```{r}
+
+##Filter out family homes from rest of manhattan data
+manhattan.homes <- manhattan.sale[which(grepl("FAMILY",manhattan.sale$building.class.category)),]
+## take dimension of this new data frame
+dim(manhattan.homes)
+
+## plot log 10 transform of family homes gross square ft vs. sale price
+plot(log10(manhattan.homes$gross.sqft),log10(manhattan.homes$sale.price.n))
+summary(manhattan.homes[which(manhattan.homes$sale.price.n<100000),])
+```
+##Gross Sq. ft. vs. sale price(with removed outliers)
+```{r}
+#outliers when log 10 transform is less than or equal to 5
+manhattan.homes$outliers <- (log10(manhattan.homes$sale.price.n) <=5) + 0
+#filter out outliers
+manhattan.homes <- manhattan.homes[which(manhattan.homes$outliers==0),]
+
+#plot data without outliers
+plot(log10(manhattan.homes$gross.sqft),log10(manhattan.homes$sale.price.n))
+```
